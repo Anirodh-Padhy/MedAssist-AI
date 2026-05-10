@@ -3,7 +3,6 @@ pandas
 plotly
 numpy
 scikit-learn
-faiss-cpu
 PyPDF2
 pdfplumber
 pdf2image
@@ -14,4 +13,7 @@ pyttsx3
 pytesseract
 Pillow
 opencv-python-headless
-SentenceTransformer
+sentence-transformers==2.2.2
+transformers==4.30.2
+torch==2.0.1
+faiss-cpu==1.7.4
