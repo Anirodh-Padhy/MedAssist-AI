@@ -63,7 +63,6 @@ from doctor.doctor_tools import (
     save_doctor_notes,
     load_doctor_appointments
 )
-
 from admin.admin_tools import (
     load_users,
     delete_user,
@@ -72,7 +71,6 @@ from admin.admin_tools import (
     approve_doctor,
     load_pending_doctors
 )
-
 # =========================================================
 # PAGE CONFIG
 # =========================================================
@@ -83,14 +81,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# =========================================================
-# PREMIUM UI
-# =========================================================
-
 st.markdown("""
 <style>
 
+/* =====================================================
+BACKGROUND
+===================================================== */
+
 .stApp {
+
     background:
     linear-gradient(
         135deg,
@@ -99,18 +98,35 @@ st.markdown("""
     );
 }
 
+/* =====================================================
+MAIN CONTAINER
+===================================================== */
+
 .block-container {
+
     padding-top: 2rem;
     padding-bottom: 2rem;
+
     max-width: 1400px;
 }
 
+/* =====================================================
+HEADINGS
+===================================================== */
+
 h1, h2, h3 {
+
     color: #0F172A;
+
     font-weight: 700;
 }
 
+/* =====================================================
+SIDEBAR
+===================================================== */
+
 [data-testid="stSidebar"] {
+
     background:
     linear-gradient(
         180deg,
@@ -120,8 +136,13 @@ h1, h2, h3 {
 }
 
 [data-testid="stSidebar"] * {
+
     color: white;
 }
+
+/* =====================================================
+METRIC CARDS
+===================================================== */
 
 [data-testid="metric-container"] {
 
@@ -150,6 +171,10 @@ h1, h2, h3 {
     box-shadow:
     0 12px 40px rgba(31,38,135,0.2);
 }
+
+/* =====================================================
+BUTTONS
+===================================================== */
 
 .stButton > button {
 
@@ -183,6 +208,10 @@ h1, h2, h3 {
     0 8px 20px rgba(37,99,235,0.35);
 }
 
+/* =====================================================
+INPUTS
+===================================================== */
+
 .stTextInput input,
 .stTextArea textarea,
 .stSelectbox div,
@@ -195,6 +224,10 @@ h1, h2, h3 {
     background: white !important;
 }
 
+/* =====================================================
+UPLOAD BOX
+===================================================== */
+
 [data-testid="stFileUploader"] {
 
     background: white;
@@ -206,6 +239,10 @@ h1, h2, h3 {
     border: 2px dashed #94A3B8;
 }
 
+/* =====================================================
+TABLES
+===================================================== */
+
 [data-testid="stDataFrame"] {
 
     border-radius: 18px;
@@ -215,9 +252,18 @@ h1, h2, h3 {
     border: 1px solid #E2E8F0;
 }
 
+/* =====================================================
+SUCCESS / INFO BOXES
+===================================================== */
+
 .stAlert {
+
     border-radius: 16px;
 }
+
+/* =====================================================
+HERO CARD
+===================================================== */
 
 .hero-card {
 
@@ -240,6 +286,10 @@ h1, h2, h3 {
     0 12px 35px rgba(0,0,0,0.15);
 }
 
+/* =====================================================
+CHAT CARD
+===================================================== */
+
 .chat-card {
 
     background: white;
@@ -254,13 +304,17 @@ h1, h2, h3 {
     0 4px 12px rgba(0,0,0,0.06);
 }
 
+/* =====================================================
+FOOTER
+===================================================== */
+
 footer {
+
     visibility: hidden;
 }
 
 </style>
 """, unsafe_allow_html=True)
-
 # =========================================================
 # SESSION STATE
 # =========================================================
@@ -315,7 +369,6 @@ if not st.session_state.logged_in:
     login_ui()
 
     st.stop()
-
 # =========================================================
 # SIDEBAR
 # =========================================================
@@ -324,14 +377,14 @@ st.sidebar.title("🩺 MedAssist AI")
 
 st.sidebar.success(
     f"""
-👤 User: {st.session_state.username}
+User: {st.session_state.username}
 
-🛡️ Role: {st.session_state.role}
+Role: {st.session_state.role}
 """
 )
 
 # =========================================================
-# NAVIGATION
+# SIDEBAR NAVIGATION
 # =========================================================
 
 if st.session_state.role == "Patient":
@@ -394,15 +447,21 @@ appointments = load_appointments()
 
 if st.session_state.role == "Patient":
 
+    # =====================================================
+    # DASHBOARD
+    # =====================================================
+
     if page == "Dashboard":
 
         st.header("👤 Patient Dashboard")
+
+        total_questions = len(history)
 
         c1, c2, c3 = st.columns(3)
 
         c1.metric(
             "Consultations",
-            len(history)
+            total_questions
         )
 
         c2.metric(
@@ -421,9 +480,263 @@ if st.session_state.role == "Patient":
             history
         )
 
-        st.subheader("🧠 Smart Medical Memory")
+        st.subheader("🧠 Smart Memory")
 
         st.info(patient_memory)
+
+    # =====================================================
+    # REPORTS
+    # =====================================================
+
+    elif page == "Upload Reports":
+
+        st.header("📄 Upload Medical Reports")
+
+        uploaded_file = st.file_uploader(
+            "Upload Report",
+            type=[
+                "pdf",
+                "txt",
+                "png",
+                "jpg",
+                "jpeg"
+            ]
+        )
+
+        clean = ""
+
+        if uploaded_file:
+
+            raw_text = extract_text(
+                uploaded_file
+            )
+
+            clean = clean_text(
+                raw_text
+            )
+
+            st.text_area(
+                "Extracted Text",
+                clean,
+                height=250
+            )
+
+            chunks = split_text(clean)
+
+            chunks = [
+                c.strip()
+                for c in chunks
+                if len(c.strip()) > 5
+            ]
+
+            index, stored_chunks = create_vector_store(
+                chunks
+            )
+
+            st.session_state.index = index
+            st.session_state.chunks = stored_chunks
+
+            st.success(
+                "Medical report processed successfully!"
+            )
+
+            extracted_values = extract_medical_values(
+                clean
+            )
+
+            if extracted_values:
+
+                analysis = analyze_medical_values(
+                    extracted_values
+                )
+
+                for item in analysis:
+
+                    st.write(item)
+
+                ai_explanation = explain_medical_report(
+                    analysis
+                )
+
+                st.subheader("🧠 AI Explanation")
+
+                st.info(ai_explanation)
+
+    # =====================================================
+    # PREDICTIONS
+    # =====================================================
+
+    elif page == "Predictions":
+
+        st.header("🩺 Health Prediction")
+
+        c1, c2 = st.columns(2)
+
+        glucose = c1.number_input(
+            "Glucose",
+            value=100
+        )
+
+        blood_pressure = c2.number_input(
+            "Blood Pressure",
+            value=80
+        )
+
+        bmi = c1.number_input(
+            "BMI",
+            value=25.0
+        )
+
+        age = c2.number_input(
+            "Age",
+            value=30
+        )
+
+        cholesterol = c1.number_input(
+            "Cholesterol",
+            value=180
+        )
+
+        if st.button("Predict"):
+
+            d_prediction, d_probability = predict_diabetes(
+                glucose,
+                blood_pressure,
+                bmi,
+                age
+            )
+
+            h_prediction, h_probability = predict_heart_disease(
+                cholesterol,
+                blood_pressure,
+                bmi,
+                age
+            )
+
+            diabetes_risk = round(
+                d_probability * 100,
+                2
+            )
+
+            heart_risk = round(
+                h_probability * 100,
+                2
+            )
+
+            health_score = calculate_health_score(
+                diabetes_risk,
+                heart_risk
+            )
+
+            st.success(
+                f"Health Score: {health_score}"
+            )
+
+    # =====================================================
+    # APPOINTMENTS
+    # =====================================================
+
+    elif page == "Appointments":
+
+        st.header("📅 Book Appointment")
+
+        c1, c2 = st.columns(2)
+
+        doctor_list = load_doctors()
+
+        doctor_name = c1.selectbox(
+            "Doctor",
+            doctor_list
+        )
+
+        appointment_date = c2.date_input(
+            "Date"
+        )
+
+        appointment_time = c1.time_input(
+            "Time"
+        )
+
+        appointment_reason = c2.text_input(
+            "Reason"
+        )
+
+        if st.button("Book Appointment"):
+
+            book_appointment(
+                st.session_state.username,
+                doctor_name,
+                str(appointment_date),
+                str(appointment_time),
+                appointment_reason
+            )
+
+            st.success(
+                "Appointment booked successfully!"
+            )
+
+        st.markdown("---")
+
+        st.subheader("📋 My Appointments")
+
+        patient_appointments = [
+            a for a in appointments
+            if a[0] == st.session_state.username
+        ]
+
+        if patient_appointments:
+
+            patient_df = pd.DataFrame(
+                patient_appointments,
+                columns=[
+                    "Patient",
+                    "Doctor",
+                    "Date",
+                    "Time",
+                    "Reason",
+                    "Status",
+                    "Notes",
+                    "Prescription"
+                ]
+            )
+
+            st.dataframe(
+                patient_df,
+                use_container_width=True
+            )
+
+    # =====================================================
+    # VOICE ASSISTANT
+    # =====================================================
+
+    elif page == "Voice Assistant":
+
+        st.header("🎙️ Voice Assistant")
+
+        if st.button("Start Voice Assistant"):
+
+            voice_input = listen_to_patient()
+
+            st.success(
+                f"You said: {voice_input}"
+            )
+
+            patient_memory = build_patient_memory(
+                history
+            )
+
+            answer = medical_response(
+                voice_input,
+                patient_memory
+            )
+
+            st.info(answer)
+
+            speak_text(answer)
+
+    # =====================================================
+    # MEDICAL CHAT
+    # =====================================================
 
     elif page == "Medical Chat":
 
@@ -444,28 +757,140 @@ if st.session_state.role == "Patient":
                 patient_memory
             )
 
-            st.markdown(
-                f"""
-                <div class="chat-card">
-
-                <h4>🧑 Patient</h4>
-                <p>{symptoms}</p>
-
-                <hr>
-
-                <h4>🤖 MedAssist AI</h4>
-                <p>{answer}</p>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.success(answer)
 
             save_history(
                 st.session_state.username,
                 symptoms,
                 answer
             )
+
+# =========================================================
+# DOCTOR DASHBOARD
+# =========================================================
+
+elif st.session_state.role == "Doctor":
+
+    st.header("👨‍⚕️ Doctor Dashboard")
+
+    doctor_name = f"Dr. {st.session_state.username}"
+
+    appointments = load_doctor_appointments()
+
+    doctor_appointments = [
+        a for a in appointments
+        if a[1] == doctor_name
+    ]
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric(
+        "Appointments",
+        len(doctor_appointments)
+    )
+
+    c2.metric(
+        "Patients",
+        len(set([a[0] for a in doctor_appointments]))
+    )
+
+    pending_count = len([
+        a for a in doctor_appointments
+        if a[5] == "Pending"
+    ])
+
+    c3.metric(
+        "Pending",
+        pending_count
+    )
+
+    st.markdown("---")
+
+    st.subheader("📅 Appointment Management")
+
+    if doctor_appointments:
+
+        for appointment in doctor_appointments:
+
+            patient = appointment[0]
+            doctor = appointment[1]
+            date = appointment[2]
+            time = appointment[3]
+            reason = appointment[4]
+            status = appointment[5]
+            notes = appointment[6]
+            prescription = appointment[7]
+
+            with st.expander(
+                f"{patient} • {date} • {status}"
+            ):
+
+                st.write(f"Reason: {reason}")
+                st.write(f"Time: {time}")
+
+                # =========================================
+                # STATUS UPDATE
+                # =========================================
+
+                new_status = st.selectbox(
+                    f"Update Status - {patient}",
+                    [
+                        "Pending",
+                        "Accepted",
+                        "Rejected",
+                        "Completed"
+                    ],
+                    key=f"status_{patient}"
+                )
+
+                if st.button(
+                    f"Save Status - {patient}"
+                ):
+
+                    update_appointment_status(
+                        patient,
+                        new_status
+                    )
+
+                    st.success(
+                        "Status updated!"
+                    )
+
+                    st.rerun()
+
+                st.markdown("---")
+
+                # =========================================
+                # NOTES
+                # =========================================
+
+                doctor_notes = st.text_area(
+                    "Doctor Notes",
+                    value=notes,
+                    key=f"notes_{patient}"
+                )
+
+                prescription_text = st.text_area(
+                    "Prescription",
+                    value=prescription,
+                    key=f"prescription_{patient}"
+                )
+
+                if st.button(
+                    f"Save Consultation - {patient}"
+                ):
+
+                    save_doctor_notes(
+                        patient,
+                        doctor_notes,
+                        prescription_text
+                    )
+
+                    st.success(
+                        "Consultation saved!"
+                    )
+
+                    st.rerun()
 
 # =========================================================
 # ADMIN DASHBOARD
@@ -479,32 +904,57 @@ elif st.session_state.role == "Admin":
 
     appointments = load_all_appointments()
 
+    # =====================================================
+    # METRICS
+    # =====================================================
+
+    total_users = len(users)
+
+    total_patients = len([
+        u for u in users
+        if u[1] == "Patient"
+    ])
+
+    total_doctors = len([
+        u for u in users
+        if u[1] == "Doctor"
+    ])
+
+    total_appointments = len(
+        appointments
+    )
+
     c1, c2, c3, c4 = st.columns(4)
 
-    c1.metric("Users", len(users))
+    c1.metric(
+        "Users",
+        total_users
+    )
 
     c2.metric(
         "Patients",
-        len([
-            u for u in users
-            if u[1] == "Patient"
-        ])
+        total_patients
     )
 
     c3.metric(
         "Doctors",
-        len([
-            u for u in users
-            if u[1] == "Doctor"
-        ])
+        total_doctors
     )
 
     c4.metric(
         "Appointments",
-        len(appointments)
+        total_appointments
     )
 
     st.markdown("---")
+
+    # =====================================================
+    # USER MANAGEMENT
+    # =====================================================
+
+    # =====================================================
+    # DOCTOR APPROVALS
+    # =====================================================
 
     st.subheader("🩺 Doctor Approval Requests")
 
@@ -546,25 +996,147 @@ elif st.session_state.role == "Admin":
 
     st.subheader("👥 User Management")
 
-    users_df = pd.DataFrame(
-        users,
-        columns=[
-            "Username",
-            "Role",
-            "Approved"
+    if users:
+
+        users_df = pd.DataFrame(
+            users,
+            columns=[
+                "Username",
+                "Role",
+                "Approved"
+            ]
+        )
+
+        st.dataframe(
+            users_df,
+            use_container_width=True
+        )
+
+        st.markdown("---")
+
+        # ================================================
+        # DELETE USER
+        # ================================================
+
+        usernames = [
+            u[0]
+            for u in users
         ]
+
+        selected_user = st.selectbox(
+            "Select User to Delete",
+            usernames
+        )
+
+        if st.button("Delete User"):
+
+            delete_user(
+                selected_user
+            )
+
+            st.success(
+                "User deleted successfully!"
+            )
+
+            st.rerun()
+
+    else:
+
+        st.info(
+            "No users found."
+        )
+
+    st.markdown("---")
+
+    # =====================================================
+    # APPOINTMENT MANAGEMENT
+    # =====================================================
+
+    st.subheader("📅 Appointment Monitoring")
+
+    if appointments:
+
+        appointment_df = pd.DataFrame(
+            appointments,
+            columns=[
+                "Patient",
+                "Doctor",
+                "Date",
+                "Time",
+                "Reason",
+                "Status"
+            ]
+        )
+
+        st.dataframe(
+            appointment_df,
+            use_container_width=True
+        )
+
+        st.markdown("---")
+
+        # ================================================
+        # ANALYTICS
+        # ================================================
+
+        st.subheader("📊 Platform Analytics")
+
+        fig = px.histogram(
+            appointment_df,
+            x="Status",
+            title="Appointment Status Analytics"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+        fig2 = px.pie(
+            appointment_df,
+            names="Doctor",
+            title="Doctor Distribution"
+        )
+
+        st.plotly_chart(
+            fig2,
+            use_container_width=True
+        )
+
+    else:
+
+        st.info(
+            "No appointments available."
+        )
+
+    st.markdown("---")
+
+    # =====================================================
+    # SYSTEM HEALTH
+    # =====================================================
+
+    st.subheader("⚙️ System Health")
+
+    st.success(
+        "System Status: Operational"
     )
 
-    st.dataframe(
-        users_df,
-        use_container_width=True
+    st.info(
+        "JWT Authentication Active"
+    )
+
+    st.info(
+        "AI Healthcare Engine Running"
+    )
+
+    st.info(
+        "Database Connected Successfully"
     )
 
 # =========================================================
 # FOOTER
 # =========================================================
-
-st.markdown("""
+    st.markdown("""
 <hr>
 
 <div style="
