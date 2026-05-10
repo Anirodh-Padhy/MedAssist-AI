@@ -1,0 +1,14 @@
+streamlit
+pandas
+plotly
+numpy
+scikit-learn
+faiss-cpu
+PyPDF2
+bcrypt
+PyJWT
+SpeechRecognition
+pyttsx3
+pytesseract
+Pillow
+opencv-python-headless
