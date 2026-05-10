@@ -5,6 +5,7 @@ numpy
 scikit-learn
 faiss-cpu
 PyPDF2
+pdfplumber
 bcrypt
 PyJWT
 SpeechRecognition
