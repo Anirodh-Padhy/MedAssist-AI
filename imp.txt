@@ -1,0 +1,8 @@
+# =========================================================
+# TEMP FIX FOR OLD USERS TABLE
+# =========================================================
+
+cursor.execute(
+    "DROP TABLE IF EXISTS users"
+)
+## If the login page is not working then paste it in auth.py after the database part and the run the streamlit and after running successfully remove it.
